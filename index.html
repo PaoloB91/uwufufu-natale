@@ -138,6 +138,24 @@ th,td{padding:8px 10px;border-bottom:1px solid var(--bordo);text-align:left;vert
 th{position:sticky;top:0;background:#202020;font-weight:700}
 td.vin{color:var(--oro);font-weight:700}
 .va{color:#ff7a6a} .vb{color:#86a6ff}
+/* Voti finali: elenco degli scontri e dettaglio, a misura di telefono */
+.elenco-voti{width:100%;max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:8px;padding-bottom:20px}
+.gruppo{font-weight:800;font-style:italic;text-transform:uppercase;color:var(--tenue);font-size:13px;letter-spacing:.06em;margin:14px 2px 2px}
+.riga-scontro{display:grid;grid-template-columns:1fr auto;grid-template-areas:"vinto freccia" "perso freccia" "numeri freccia";
+  text-align:left;background:var(--pannello);border:1px solid var(--bordo);border-radius:12px;padding:12px 14px;gap:2px 10px;width:100%}
+.riga-scontro:active{background:#232323}
+.riga-scontro .vinto{grid-area:vinto;font-weight:800;font-style:italic;text-transform:uppercase;font-size:16px}
+.riga-scontro .vinto.va{color:#ff8a7a} .riga-scontro .vinto.vb{color:#9db5ff}
+.riga-scontro .perso{grid-area:perso;font-size:14px;color:#cfcfcf}
+.riga-scontro .numeri{grid-area:numeri;font-size:12px;color:var(--tenue)}
+.riga-scontro .freccia{grid-area:freccia;align-self:center;font-size:26px;color:var(--tenue)}
+.tentativo{display:flex;flex-direction:column;gap:10px}
+.lato{background:var(--pannello);border:1px solid var(--bordo);border-left:6px solid var(--rosso);border-radius:12px;padding:12px 14px}
+.lato.b{border-left-color:var(--blu)}
+.lato-nome{font-weight:800;font-style:italic;text-transform:uppercase;font-size:17px}
+.lato-conto{font-size:13px;color:var(--tenue);margin:2px 0 8px}
+.lato-chi{display:flex;flex-wrap:wrap;gap:6px}
+.coppa{font-size:11px;font-style:normal;background:var(--oro);color:#2a1d00;border-radius:999px;padding:2px 8px;vertical-align:middle}
 canvas#coriandoli{position:fixed;inset:0;pointer-events:none;z-index:20}
 .nascosto{display:none!important}
 </style>
@@ -550,6 +568,7 @@ async function disegnaFine() {
   if (!chiave(k)) return;
   const r = R.get(P.vincitore);
   if (vista === 'voti') return disegnaVoti();
+  if (vista.startsWith('scontro:')) return disegnaDettaglio(vista.slice(8));
   $app.innerHTML = testata('Vincitore') + `<div class="centro">
     <h2 style="color:var(--oro)">Si va qui per la cena di Natale</h2>
     <div class="trofeo">${foto(r)}<div class="banda"><span>${esc(r?.nome || '?')}</span>${r?.citta ? `<small>${esc(r.citta)}</small>` : ''}</div></div>
@@ -562,28 +581,53 @@ async function disegnaFine() {
   sparaCoriandoli(220);
 }
 
+// Elenco degli scontri, pensato per il telefono: si tocca uno scontro e si vede chi ha votato cosa.
+const nomeR = id => esc(R.get(id)?.nome || '?');
+function esitoBreve(s) {
+  if (s.fase === 'moneta') return `a ${s.moneta.esce} dopo due pareggi`;
+  const c = s.conteggi?.[s.tentativo] || { a: 0, b: 0 }, v = s.vincitore;
+  return `${c[v]} a ${c[v === 'a' ? 'b' : 'a']}${s.tentativo === 2 ? ' al rivoto' : ''}`;
+}
+function vaiA(v) { vista = v; aggiorna(); window.scrollTo(0, 0); }
+
 function disegnaVoti() {
-  const gioc = [...G.values()].sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
   const scontri = [...S.values()].filter(s => s.vincitore).sort((a, b) => a.turno - b.turno || a.n - b.n);
-  const voto = (sid, t, uid) => VOTI_FINALI.find(v => v.sid === sid && v.t === t && v.uid === uid)?.scelta;
-  const breve = id => esc(R.get(id)?.nome || '?');
-  const righe = scontri.map(s => {
-    const celle = gioc.map(g => {
-      const v1 = voto(s.id, 1, g.id), v2 = voto(s.id, 2, g.id);
-      const f = v => v ? `<span class="v${v}">${breve(s[v])}</span>` : '<span class="tenue">-</span>';
-      return `<td>${f(v1)}${s.conteggi?.[2] ? ` → ${f(v2)}` : ''}</td>`;
-    }).join('');
-    const extra = s.fase === 'moneta' ? ' (moneta)' : s.conteggi?.[2] ? ' (rivoto)' : '';
-    return `<tr><td>${esc(nomeTurno(P.turni[s.turno], true))} ${s.n}</td>
-      <td><span class="va">${breve(s.a)}</span> vs <span class="vb">${breve(s.b)}</span></td>
-      <td class="vin">${breve(s[s.vincitore])}${extra}</td>${celle}</tr>`;
-  }).join('');
-  $app.innerHTML = testata('I voti di tutti') + `<div class="centro" style="justify-content:flex-start">
-    <div class="tabella-voti"><table><thead><tr><th>Turno</th><th>Scontro</th><th>Passa</th>${gioc.map(g => `<th>${esc(g.nome)}</th>`).join('')}</tr></thead>
-    <tbody>${righe}</tbody></table></div>
-    <p class="tenue">Nei pareggi: primo voto → voto dopo il timer.</p>
-    <button class="btn grigio" id="indietro">Torna al vincitore</button></div>`;
-  document.getElementById('indietro').onclick = () => { vista = 'tabellone'; aggiorna(); };
+  let html = '', turno = null;
+  for (const s of scontri) {
+    if (s.turno !== turno) { turno = s.turno; html += `<div class="gruppo">${esc(nomeTurno(P.turni[turno]))}</div>`; }
+    const perde = s.vincitore === 'a' ? 'b' : 'a';
+    html += `<button class="riga-scontro" data-sid="${s.id}">
+      <span class="vinto v${s.vincitore}">${nomeR(s[s.vincitore])}</span>
+      <span class="perso">batte ${nomeR(s[perde])}</span>
+      <span class="numeri">${esitoBreve(s)}</span><span class="freccia">›</span></button>`;
+  }
+  $app.innerHTML = testata('I voti di tutti') + `<div class="elenco-voti">
+    <p class="tenue" style="text-align:center;margin-bottom:6px">Tocca uno scontro per vedere chi ha votato cosa</p>${html}
+    <button class="btn grigio" id="indietro" style="width:100%;margin-top:18px">Torna al vincitore</button></div>`;
+  $app.querySelectorAll('.riga-scontro').forEach(b => b.onclick = () => vaiA('scontro:' + b.dataset.sid));
+  document.getElementById('indietro').onclick = () => vaiA('tabellone');
+}
+
+function disegnaDettaglio(sid) {
+  const s = S.get(sid);
+  if (!s) return vaiA('voti');
+  const nomeG = uid => esc(G.get(uid)?.nome || 'Uscito dal gioco');
+  const blocco = t => {
+    const voti = VOTI_FINALI.filter(v => v.sid === sid && v.t === t);
+    const lato = l => {
+      const chi = voti.filter(v => v.scelta === l).map(v => nomeG(v.uid)).sort();
+      return `<div class="lato ${l}"><div class="lato-nome">${nomeR(s[l])}${s.vincitore === l && t === s.tentativo ? ' <span class="coppa">passa</span>' : ''}</div>
+        <div class="lato-conto">${chi.length} ${chi.length === 1 ? 'voto' : 'voti'}</div>
+        <div class="lato-chi">${chi.length ? chi.map(n => `<span class="chip">${n}</span>`).join('') : '<span class="tenue">nessuno</span>'}</div></div>`;
+    };
+    return `<div class="tentativo">${s.conteggi?.[2] ? `<div class="gruppo">${t === 1 ? 'Primo voto: pareggio' : 'Dopo il timer'}</div>` : ''}${lato('a')}${lato('b')}</div>`;
+  };
+  const moneta = s.fase === 'moneta'
+    ? `<div class="pannello" style="text-align:center">Ancora pari: moneta. Testa a ${nomeR(s[s.moneta.testa])}, croce a ${nomeR(s[s.moneta.testa === 'a' ? 'b' : 'a'])}. È uscita <b>${s.moneta.esce}</b>.</div>` : '';
+  $app.innerHTML = testata(`${esc(nomeTurno(P.turni[s.turno], true))} <span class="sep">|</span> <span><b>${s.n}</b>/${s.di}</span>`) + `<div class="elenco-voti">
+    ${blocco(1)}${s.conteggi?.[2] ? blocco(2) : ''}${moneta}
+    <button class="btn grigio" id="indietro" style="width:100%;margin-top:18px">‹ Torna all'elenco</button></div>`;
+  document.getElementById('indietro').onclick = () => vaiA('voti');
 }
 
 // ---------- coriandoli ----------
