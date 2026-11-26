@@ -32,12 +32,15 @@ input{font:inherit}
 @media (max-width:640px){.chi{position:static;max-width:none;order:-1;display:flex;gap:8px;align-items:center}.chi br{display:none}.chi .regia{margin-top:0}}
 
 /* Lo scontro */
-.arena{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:clamp(10px,2.4vw,28px);align-items:stretch}
+.arena{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:clamp(10px,2.4vw,28px);align-items:start}
+/* Altezza dal padding, non da aspect-ratio: su Safari iPhone la scheda (contenuto tutto assoluto)
+   si schiacciava a zero (prova del 26/11/2026). */
 .scheda{position:relative;border:6px solid var(--rosso);border-radius:12px;background:var(--card);overflow:hidden;
-  aspect-ratio:3/4;transition:transform .5s cubic-bezier(.2,.9,.3,1.2),opacity .5s,filter .5s,box-shadow .3s;
+  transition:transform .5s cubic-bezier(.2,.9,.3,1.2),opacity .5s,filter .5s,box-shadow .3s;
   box-shadow:0 0 22px rgba(211,33,17,.45)}
+.scheda::before{content:"";display:block;padding-top:133%}
 .scheda.b{border-color:var(--blu);box-shadow:0 0 22px rgba(59,108,230,.5)}
-@media (min-width:760px){.scheda{aspect-ratio:4/3.3}}
+@media (min-width:760px){.scheda::before{padding-top:82%}}
 .scheda img,.scheda .vuota{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .scheda .vuota{display:flex;align-items:center;justify-content:center;font-weight:900;font-style:italic;font-size:clamp(60px,16vw,150px);color:rgba(255,255,255,.14);
   background:radial-gradient(circle at 30% 20%,#2a1010,transparent 60%),radial-gradient(circle at 70% 80%,#0f1a2e,transparent 60%),#141414}
@@ -119,7 +122,8 @@ h2{font-weight:800;font-style:italic;text-transform:uppercase;font-size:clamp(22
 .annuncio .num.b{color:var(--blu)}
 
 /* Fine */
-.trofeo{position:relative;width:min(420px,86vw);aspect-ratio:3/4;border:6px solid var(--oro);border-radius:14px;overflow:hidden;box-shadow:0 0 50px rgba(242,193,78,.5);animation:entra .8s cubic-bezier(.2,.9,.3,1.3)}
+.trofeo::before{content:"";display:block;padding-top:133%}
+.trofeo{position:relative;width:min(420px,86vw);border:6px solid var(--oro);border-radius:14px;overflow:hidden;box-shadow:0 0 50px rgba(242,193,78,.5);animation:entra .8s cubic-bezier(.2,.9,.3,1.3)}
 .trofeo img,.trofeo .vuota{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .trofeo .banda{background:rgba(185,135,20,.85)}
 .tabella-voti{width:100%;overflow-x:auto;border:1px solid var(--bordo);border-radius:12px;background:var(--pannello)}
