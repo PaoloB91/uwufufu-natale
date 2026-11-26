@@ -491,7 +491,8 @@ function disegnaScontro(tick) {
     const c = s.conteggi?.[1] || { a: 0, b: 0 };
     velo = `<div class="velo"><div class="grande">Pareggio ${c.a} a ${c.b}</div>
       <div class="timer" id="timer">${Math.max(0, Math.ceil((s.timerFine - ora) / 1000))}</div>
-      <div class="tenue">Discutete, poi si rivota</div></div>`;
+      <div class="tenue">Discutete, poi si rivota</div>
+      ${sonoRegia ? '<button class="btn rosso" id="vaiVoto" style="margin-top:14px">Vai al voto</button>' : ''}</div>`;
   } else if (sotto === 'moneta-assegna' || sotto === 'moneta-lancio') {
     const testa = s.moneta.testa, croce = testa === 'a' ? 'b' : 'a';
     velo = `<div class="velo">
@@ -518,6 +519,9 @@ function disegnaScontro(tick) {
   if (s.fase === 'voto') $app.querySelectorAll('.scheda.cliccabile').forEach(el => el.onclick = () => vota(s, el.dataset.lato));
   $app.querySelectorAll('[data-assente]').forEach(b => b.onclick = () => updateDoc(base('giocatori', b.dataset.assente), { assente: true }));
   const bp = document.getElementById('prossimo'); if (bp) bp.onclick = () => { bp.disabled = true; prossimo(); };
+  // La regia può chiudere il timer del pareggio prima dei 60 secondi.
+  const bv = document.getElementById('vaiVoto');
+  if (bv) bv.onclick = () => { bv.disabled = true; transizione(s.id, x => x.fase === 'timer' && x.tentativo === 1, { fase: 'voto', tentativo: 2 }); };
   if (sotto === 'moneta-lancio') {
     const m = document.getElementById('moneta');
     const giri = 360 * 7 + (s.moneta.esce === 'croce' ? 180 : 0);
