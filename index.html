@@ -151,7 +151,7 @@ canvas#coriandoli{position:fixed;inset:0;pointer-events:none;z-index:20}
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
 import { initializeAuth, browserLocalPersistence, inMemoryPersistence, signInAnonymously, onAuthStateChanged }
   from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
-import { getFirestore, doc, collection, onSnapshot, setDoc, getDoc, getDocs, query, where, writeBatch,
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, memoryLocalCache, doc, collection, onSnapshot, setDoc, getDoc, getDocs, query, where, writeBatch,
   updateDoc, runTransaction, serverTimestamp }
   from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 
@@ -167,7 +167,14 @@ const ATTESA_LANCIO = 4500;     // ms in cui si legge chi è testa e chi è croc
 
 const fb = initializeApp(window.UWU_CONFIG);
 const auth = initializeAuth(fb, { persistence: PROVA ? inMemoryPersistence : browserLocalPersistence });
-const db = getFirestore(fb);
+// Dati tenuti sul telefono: una ricarica riparte dalla memoria e scarica solo le novità
+// (26/11/2026: senza, ogni apertura riscaricava tutte le foto). In prova ogni scheda resta separata.
+let db;
+try {
+  db = initializeFirestore(fb, { localCache: PROVA ? memoryLocalCache() : persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+} catch (e) {
+  db = initializeFirestore(fb, { localCache: memoryLocalCache() });
+}
 const base = (...p) => doc(db, 'partite', PID, ...p);
 const col = (nome) => collection(db, 'partite', PID, nome);
 
