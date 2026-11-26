@@ -41,6 +41,12 @@ input{font:inherit}
 .scheda::before{content:"";display:block;padding-top:133%}
 .scheda.b{border-color:var(--blu);box-shadow:0 0 22px rgba(59,108,230,.5)}
 @media (min-width:760px){.scheda::before{padding-top:82%}}
+/* Telefono: una scheda sopra l'altra (richiesta di Paolo del 26/11/2026), VS in mezzo. */
+@media (max-width:640px){
+  .arena{grid-template-columns:1fr;gap:18px}
+  .scheda::before{padding-top:58%}
+  .vs{font-size:64px}
+}
 .scheda img,.scheda .vuota{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .scheda .vuota{display:flex;align-items:center;justify-content:center;font-weight:900;font-style:italic;font-size:clamp(60px,16vw,150px);color:rgba(255,255,255,.14);
   background:radial-gradient(circle at 30% 20%,#2a1010,transparent 60%),radial-gradient(circle at 70% 80%,#0f1a2e,transparent 60%),#141414}
